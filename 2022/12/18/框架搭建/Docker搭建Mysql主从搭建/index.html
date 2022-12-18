@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jhy97.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="前言环境选择: centos7、docker:20.10.21、mysql:8.0.31。一般来说数据库的瓶颈基本都是IO, 基本不会出现一台服务器部署多个Mysql服务，本次只作为Demo测试及简单使用，切勿在生产环境部署。   一、 镜像拉取在Docker Hub中选择合适的Mysql版本（8.0.31）。 1docker pull mysql:8.0.31 二、 准备配置1. 手动创建相关配">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Docker搭建Mysql主从搭建">
+<meta property="og:url" content="http://jhy97.top/2022/12/18/%E6%A1%86%E6%9E%B6%E6%90%AD%E5%BB%BA/Docker%E6%90%AD%E5%BB%BAMysql%E4%B8%BB%E4%BB%8E%E6%90%AD%E5%BB%BA/index.html">
+<meta property="og:site_name" content="天不错啊">
+<meta property="og:description" content="前言环境选择: centos7、docker:20.10.21、mysql:8.0.31。一般来说数据库的瓶颈基本都是IO, 基本不会出现一台服务器部署多个Mysql服务，本次只作为Demo测试及简单使用，切勿在生产环境部署。   一、 镜像拉取在Docker Hub中选择合适的Mysql版本（8.0.31）。 1docker pull mysql:8.0.31 二、 准备配置1. 手动创建相关配">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-12-18T13:28:00.000Z">
+<meta property="article:modified_time" content="2022-12-18T15:09:47.651Z">
+<meta property="article:author" content="JiHongYuan">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://jhy97.top/2022/12/18/%E6%A1%86%E6%9E%B6%E6%90%AD%E5%BB%BA/Docker%E6%90%AD%E5%BB%BAMysql%E4%B8%BB%E4%BB%8E%E6%90%AD%E5%BB%BA/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Docker搭建Mysql主从搭建 | 天不错啊</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">天不错啊</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录生活&学习</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">4</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">6</span></a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://jhy97.top/2022/12/18/%E6%A1%86%E6%9E%B6%E6%90%AD%E5%BB%BA/Docker%E6%90%AD%E5%BB%BAMysql%E4%B8%BB%E4%BB%8E%E6%90%AD%E5%BB%BA/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="JiHongYuan">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="天不错啊">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Docker搭建Mysql主从搭建
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2022-12-18 21:28:00 / 修改时间：23:09:47" itemprop="dateCreated datePublished" datetime="2022-12-18T21:28:00+08:00">2022-12-18</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%A1%86%E6%9E%B6%E6%90%AD%E5%BB%BA/" itemprop="url" rel="index"><span itemprop="name">框架搭建</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>环境选择: <code>centos7</code>、<code>docker:20.10.21</code>、<code>mysql:8.0.31</code>。<br>一般来说数据库的瓶颈基本都是IO, 基本不会出现一台服务器部署多个Mysql服务，本次只作为Demo测试及简单使用，切勿在生产环境部署。  </p>
+<h1 id="一、-镜像拉取"><a href="#一、-镜像拉取" class="headerlink" title="一、 镜像拉取"></a>一、 镜像拉取</h1><p>在<a target="_blank" rel="noopener" href="https://hub.docker.com/_/mysql/tags">Docker Hub</a>中选择合适的Mysql版本（8.0.31）。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker pull mysql:8.0.31</span><br></pre></td></tr></table></figure>
+<h1 id="二、-准备配置"><a href="#二、-准备配置" class="headerlink" title="二、 准备配置"></a>二、 准备配置</h1><h3 id="1-手动创建相关配置"><a href="#1-手动创建相关配置" class="headerlink" title="1. 手动创建相关配置"></a>1. 手动创建相关配置</h3><p><strong>准备以下文件夹</strong>：</p>
+<ol>
+<li><code>/docker/mysql/master</code></li>
+<li><code>/docker/mysql/slave1</code></li>
+<li><code>/docker/mysql/slave1</code></li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">cd /docker/mysql/master</span><br><span class="line">mkdir config</span><br><span class="line">mkdir data</span><br><span class="line">mkdir logs</span><br><span class="line"></span><br><span class="line">cd config</span><br><span class="line">mkdir conf.d</span><br><span class="line">vim conf.d/my.cnf</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">将以上结构复制到slave1、slave2文件夹中</span></span><br></pre></td></tr></table></figure>
+<p><strong>my.cnf文件内容如下：</strong></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">For advice on how to change settings please see</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">http://dev.mysql.com/doc/refman/8.0/en/server-configuration-defaults.html</span></span><br><span class="line"></span><br><span class="line">[mysqld]</span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"></span></span><br><span class="line"><span class="language-bash"><span class="comment"># Remove leading # and set to the amount of RAM for the most important data</span></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">cache <span class="keyword">in</span> MySQL. Start at 70% of total RAM <span class="keyword">for</span> dedicated server, <span class="keyword">else</span> 10%.</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">innodb_buffer_pool_size = 128M</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"></span></span><br><span class="line"><span class="language-bash"><span class="comment"># Remove leading # to turn on a very important data integrity option: logging</span></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">changes to the binary <span class="built_in">log</span> between backups.</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">log_bin</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"></span></span><br><span class="line"><span class="language-bash"><span class="comment"># Remove leading # to set options mainly useful for reporting servers.</span></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">The server defaults are faster <span class="keyword">for</span> transactions and fast SELECTs.</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">Adjust sizes as needed, experiment to find the optimal values.</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">join_buffer_size = 128M</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">sort_buffer_size = 2M</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">read_rnd_buffer_size = 2M</span></span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">Remove leading <span class="comment"># to revert to previous value for default_authentication_plugin,</span></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">this will increase compatibility with older clients. For background, see:</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html<span class="comment">#sysvar_default_authentication_plugin</span></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">default-authentication-plugin=mysql_native_password</span></span><br><span class="line">skip-host-cache</span><br><span class="line">skip-name-resolve</span><br><span class="line">datadir=/var/lib/mysql</span><br><span class="line">socket=/var/run/mysqld/mysqld.sock</span><br><span class="line">secure-file-priv=/var/lib/mysql-files</span><br><span class="line">user=mysql</span><br><span class="line"></span><br><span class="line">pid-file=/var/run/mysqld/mysqld.pid</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 设置server_id，一般设置为IP，注意要唯一</span></span></span><br><span class="line">server_id=1</span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 复制过滤：也就是指定哪个数据库不用同步（mysql库一般不同步）</span></span></span><br><span class="line">binlog-ignore-db=mysql</span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 开启二进制日志功能，可以随便取，最好有含义（关键就是这里了）</span></span></span><br><span class="line">log-bin=replicas-mysql-bin</span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 为每个session分配的内存，在事务过程中用来存储二进制日志的缓存</span></span></span><br><span class="line">binlog_cache_size=1M</span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 主从复制的格式（mixed,statement,row，默认格式是statement）</span></span></span><br><span class="line">binlog_format=mixed</span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 二进制日志自动删除/过期的天数。默认值为0，表示不自动删除。</span></span></span><br><span class="line">expire_logs_days=7</span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 跳过主从复制中遇到的所有错误或指定类型的错误，避免slave端复制中断。</span></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 如：1062错误是指一些主键重复，1032错误是因为主从数据库数据不一致</span></span></span><br><span class="line">slave_skip_errors=1062</span><br><span class="line"></span><br><span class="line">[client]</span><br><span class="line">socket=/var/run/mysqld/mysqld.sock</span><br><span class="line"></span><br><span class="line">!includedir /etc/mysql/conf.d/</span><br></pre></td></tr></table></figure>
+<p><strong>修改Slave配置：</strong></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">slave1</span></span><br><span class="line">[mysqld]</span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 设置server_id,注意要唯一</span></span></span><br><span class="line">server-id=2  </span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 开启二进制日志功能，以备Slave作为其它Slave的Master时使用</span></span></span><br><span class="line">log-bin=mysql-slave-bin   </span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># relay_log配置中继日志</span></span></span><br><span class="line">relay_log=edu-mysql-relay-bin  </span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">slave2</span></span><br><span class="line">[mysqld]</span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 设置server_id,注意要唯一</span></span></span><br><span class="line">server-id=3  </span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 开启二进制日志功能，以备Slave作为其它Slave的Master时使用</span></span></span><br><span class="line">log-bin=mysql-slave-bin   </span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># relay_log配置中继日志</span></span></span><br><span class="line">relay_log=edu-mysql-relay-bin  </span><br></pre></td></tr></table></figure>
+
+<h3 id="2-创建Mysql容器cp"><a href="#2-创建Mysql容器cp" class="headerlink" title="2. 创建Mysql容器cp"></a>2. 创建Mysql容器cp</h3><p>略, 大部分和<strong>1</strong>相同，只是从容器中复制出<code>conf.d</code>文件夹，根据<code>mysql</code>版本可能存在目录位置不一样。</p>
+<h2 id="三、创建容器"><a href="#三、创建容器" class="headerlink" title="三、创建容器"></a>三、创建容器</h2><p><strong>1. master</strong></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">docker run -d --name mysql-master \</span><br><span class="line">    --privileged=true \</span><br><span class="line">    -p 17717:3306 \</span><br><span class="line">    -v /docker/mysql/master/data:/var/lib/mysql \</span><br><span class="line">    -v /docker/mysql/master/logs:/var/log/mysql \</span><br><span class="line">    -v /docker/mysql/master/conf:/etc/mysql \</span><br><span class="line">    -e MYSQL_ROOT_PASSWORD=123456 \</span><br><span class="line">    -d mysql:8.0.31</span><br></pre></td></tr></table></figure>
+<p><strong>2. slave1</strong></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">docker run -d --name mysql-slave1 \</span><br><span class="line">   --privileged=true \</span><br><span class="line">   -p 17718:3306 \</span><br><span class="line">   -v /docker/mysql/slave1/data:/var/lib/mysql \</span><br><span class="line">   -v /docker/mysql/slave1/logs:/var/log/mysql \</span><br><span class="line">   -v /docker/mysql/slave1/conf:/etc/mysql \</span><br><span class="line">   -e MYSQL_ROOT_PASSWORD=21d4d869012c4e51acfd7a40387f5c99 \</span><br><span class="line">   -d mysql:8.0.31</span><br></pre></td></tr></table></figure>
+<p><strong>3. slave2</strong></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">docker run -d --name mysql-slave2 \</span><br><span class="line">    --privileged=true \</span><br><span class="line">    -p 17719:3306 \</span><br><span class="line">    -v /docker/mysql/slave2/data:/var/lib/mysql \</span><br><span class="line">    -v /docker/mysql/slave2/logs:/var/log/mysql \</span><br><span class="line">    -v /docker/mysql/slave2/conf:/etc/mysql \</span><br><span class="line">    -e MYSQL_ROOT_PASSWORD=9393f589049f4c89939ba167f8a05043 \</span><br><span class="line">    -d mysql:8.0.31</span><br></pre></td></tr></table></figure>
+<h1 id="四、绑定主从关系"><a href="#四、绑定主从关系" class="headerlink" title="四、绑定主从关系"></a>四、绑定主从关系</h1><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">change master to master_host=&#x27;IP&#x27;,master_user=&#x27;root&#x27;,master_password=&#x27;&#x27;,master_port=17717,master_log_file=&#x27;replicas-mysql-bin.000001&#x27;,master_log_pos=0;</span><br><span class="line">flush privileges;</span><br><span class="line">start slave;</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">设置只读</span></span><br><span class="line">set global read_only=1;</span><br></pre></td></tr></table></figure>
+<h1 id="五、总结"><a href="#五、总结" class="headerlink" title="五、总结"></a>五、总结</h1><p>总体下来搭建并不复杂，只需要几行配置命令即可，实际上还是花了大半天的时间。<br>总结下来：文档没有仔细阅读、docker并不熟悉导致的结果。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/09/12/%E4%B8%BA%E4%BB%80%E4%B9%88ArrayList%20ForEach%E4%B8%8D%E8%83%BD%E4%BF%AE%E6%94%B9%E7%BB%93%E6%9E%84%EF%BC%9F/" rel="prev" title="为什么ArrayList ForEach不能修改结构？">
+      <i class="fa fa-chevron-left"></i> 为什么ArrayList ForEach不能修改结构？
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E3%80%81-%E9%95%9C%E5%83%8F%E6%8B%89%E5%8F%96"><span class="nav-text">一、 镜像拉取</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8C%E3%80%81-%E5%87%86%E5%A4%87%E9%85%8D%E7%BD%AE"><span class="nav-text">二、 准备配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E6%89%8B%E5%8A%A8%E5%88%9B%E5%BB%BA%E7%9B%B8%E5%85%B3%E9%85%8D%E7%BD%AE"><span class="nav-text">1. 手动创建相关配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E5%88%9B%E5%BB%BAMysql%E5%AE%B9%E5%99%A8cp"><span class="nav-text">2. 创建Mysql容器cp</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E5%88%9B%E5%BB%BA%E5%AE%B9%E5%99%A8"><span class="nav-text">三、创建容器</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E7%BB%91%E5%AE%9A%E4%B8%BB%E4%BB%8E%E5%85%B3%E7%B3%BB"><span class="nav-text">四、绑定主从关系</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E6%80%BB%E7%BB%93"><span class="nav-text">五、总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">JiHongYuan</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">6</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">JiHongYuan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
