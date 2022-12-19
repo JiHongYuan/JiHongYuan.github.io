@@ -28,7 +28,7 @@
 <meta property="og:description" content="前言环境选择: centos7、docker:20.10.21、mysql:8.0.31、sharding-proxy:latest。相对于mysql主从搭建，sharding-proxy搭建时确实花了写功夫，再次总结并反思。 一、 镜像拉取在Docker Hub中选择合适的版本。 1docker pull apache&#x2F;sharding-proxy:latest 二、准备配置搭建前，一定要仔细的">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2022-12-18T13:28:00.000Z">
-<meta property="article:modified_time" content="2022-12-19T01:12:53.078Z">
+<meta property="article:modified_time" content="2022-12-19T01:26:35.608Z">
 <meta property="article:author" content="JiHongYuan">
 <meta name="twitter:card" content="summary">
 
@@ -191,7 +191,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-12-19 09:12:53" itemprop="dateModified" datetime="2022-12-19T09:12:53+08:00">2022-12-19</time>
+                <time title="修改时间：2022-12-19 09:26:35" itemprop="dateModified" datetime="2022-12-19T09:26:35+08:00">2022-12-19</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -224,7 +224,7 @@
 <li><code>/docker/sharding-proxy/ext-lib</code><br>将<code>mysql jbdc</code>驱动放进去。</li>
 </ol>
 <h1 id="三、运行容器"><a href="#三、运行容器" class="headerlink" title="三、运行容器"></a>三、运行容器</h1><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">docker run -d \</span><br><span class="line">    -v /docker/sharding-proxy/conf:/opt/shardingsphere-proxy/conf \</span><br><span class="line">    -v /docker/sharding-proxy/ext-lib:/opt/shardingsphere-proxy/ext-lib \</span><br><span class="line">    -p 3306:3307 \</span><br><span class="line">    apache/shardingsphere-proxy:latest</span><br></pre></td></tr></table></figure>
-<h1 id="五、总结"><a href="#五、总结" class="headerlink" title="五、总结"></a>五、总结</h1><p>看文档，看文档，看文档真的很重要。</p>
+<h1 id="四、总结"><a href="#四、总结" class="headerlink" title="四、总结"></a>四、总结</h1><p>看文档，看文档，看文档真的很重要。</p>
 
     </div>
 
@@ -305,7 +305,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E3%80%81-%E9%95%9C%E5%83%8F%E6%8B%89%E5%8F%96"><span class="nav-text">一、 镜像拉取</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%87%86%E5%A4%87%E9%85%8D%E7%BD%AE"><span class="nav-text">二、准备配置</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E5%AE%B9%E5%99%A8"><span class="nav-text">三、运行容器</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E6%80%BB%E7%BB%93"><span class="nav-text">五、总结</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E3%80%81-%E9%95%9C%E5%83%8F%E6%8B%89%E5%8F%96"><span class="nav-text">一、 镜像拉取</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%87%86%E5%A4%87%E9%85%8D%E7%BD%AE"><span class="nav-text">二、准备配置</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E5%AE%B9%E5%99%A8"><span class="nav-text">三、运行容器</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E6%80%BB%E7%BB%93"><span class="nav-text">四、总结</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
