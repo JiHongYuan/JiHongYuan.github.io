@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jhy97.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="前言环境选择: centos7、docker:20.10.21、mysql:8.0.31、sharding-proxy:latest。相对于mysql主从搭建，sharding-proxy搭建时确实花了写功夫，再次总结并反思。 一、 镜像拉取在Docker Hub中选择合适的版本。 1docker pull apache&#x2F;sharding-proxy:latest 二、准备配置搭建前，一定要仔细的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Docker搭建Sharding-Proxy读写分离">
+<meta property="og:url" content="http://jhy97.top/2022/12/18/%E6%A1%86%E6%9E%B6%E6%90%AD%E5%BB%BA/Docker%E6%90%AD%E5%BB%BASharding-Proxy%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB/index.html">
+<meta property="og:site_name" content="天不错啊">
+<meta property="og:description" content="前言环境选择: centos7、docker:20.10.21、mysql:8.0.31、sharding-proxy:latest。相对于mysql主从搭建，sharding-proxy搭建时确实花了写功夫，再次总结并反思。 一、 镜像拉取在Docker Hub中选择合适的版本。 1docker pull apache&#x2F;sharding-proxy:latest 二、准备配置搭建前，一定要仔细的">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-12-18T13:28:00.000Z">
+<meta property="article:modified_time" content="2022-12-19T01:12:53.078Z">
+<meta property="article:author" content="JiHongYuan">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://jhy97.top/2022/12/18/%E6%A1%86%E6%9E%B6%E6%90%AD%E5%BB%BA/Docker%E6%90%AD%E5%BB%BASharding-Proxy%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Docker搭建Sharding-Proxy读写分离 | 天不错啊</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">天不错啊</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录生活&学习</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">4</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">7</span></a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://jhy97.top/2022/12/18/%E6%A1%86%E6%9E%B6%E6%90%AD%E5%BB%BA/Docker%E6%90%AD%E5%BB%BASharding-Proxy%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="JiHongYuan">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="天不错啊">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Docker搭建Sharding-Proxy读写分离
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-12-18 21:28:00" itemprop="dateCreated datePublished" datetime="2022-12-18T21:28:00+08:00">2022-12-18</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-12-19 09:12:53" itemprop="dateModified" datetime="2022-12-19T09:12:53+08:00">2022-12-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%A1%86%E6%9E%B6%E6%90%AD%E5%BB%BA/" itemprop="url" rel="index"><span itemprop="name">框架搭建</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>环境选择: <code>centos7</code>、<code>docker:20.10.21</code>、<code>mysql:8.0.31</code>、<code>sharding-proxy:latest</code>。<br>相对于<code>mysql</code>主从搭建，<code>sharding-proxy</code>搭建时确实花了写功夫，再次总结并反思。</p>
+<h1 id="一、-镜像拉取"><a href="#一、-镜像拉取" class="headerlink" title="一、 镜像拉取"></a>一、 镜像拉取</h1><p>在<a target="_blank" rel="noopener" href="https://hub.docker.com/r/apache/sharding-proxy/tags">Docker Hub</a>中选择合适的版本。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker pull apache/sharding-proxy:latest</span><br></pre></td></tr></table></figure>
+<h1 id="二、准备配置"><a href="#二、准备配置" class="headerlink" title="二、准备配置"></a>二、准备配置</h1><p>搭建前，一定要仔细的看完<a target="_blank" rel="noopener" href="https://shardingsphere.apache.org/document/5.3.0/cn/user-manual/shardingsphere-proxy/startup/docker/">官方文档</a>，下载<a target="_blank" rel="noopener" href="https://github.com/apache/shardingsphere/tree/master/examples/shardingsphere-proxy-example/shardingsphere-proxy-boot-mybatis-example">官方Example</a>。<br><strong>准备以下文件</strong>：</p>
+<ol>
+<li><code>/docker/sharding-proxy/conf</code><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># server.yaml</span></span><br><span class="line"><span class="attr">authority:</span></span><br><span class="line">  <span class="attr">users:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">user:</span> <span class="string">root</span></span><br><span class="line">      <span class="attr">password:</span> <span class="string">root</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">user:</span> <span class="string">sharding</span></span><br><span class="line">      <span class="attr">password:</span> <span class="string">sharding</span></span><br><span class="line">  <span class="attr">privilege:</span></span><br><span class="line">    <span class="attr">type:</span> <span class="string">ALL_PERMITTED</span></span><br><span class="line"></span><br><span class="line"><span class="attr">props:</span></span><br><span class="line">  <span class="attr">max-connections-size-per-query:</span> <span class="number">1</span></span><br><span class="line">  <span class="attr">kernel-executor-size:</span> <span class="number">16</span>  <span class="comment"># Infinite by default.</span></span><br><span class="line">  <span class="attr">proxy-frontend-flush-threshold:</span> <span class="number">128</span>  <span class="comment"># The default value is 128.</span></span><br><span class="line">  <span class="attr">proxy-hint-enabled:</span> <span class="literal">false</span></span><br><span class="line">  <span class="attr">sql-show:</span> <span class="literal">false</span></span><br><span class="line">  <span class="attr">check-table-metadata-enabled:</span> <span class="literal">false</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># config-readwrite-nacos-config.yaml</span></span><br><span class="line"><span class="attr">databaseName:</span> <span class="string">nacos_config</span></span><br><span class="line"></span><br><span class="line"><span class="attr">dataSources:</span></span><br><span class="line">  <span class="attr">primary_ds:</span></span><br><span class="line">    <span class="attr">url:</span> <span class="string">jdbc:mysql://127.0.0.1:17717/nacos_config?allowPublicKeyRetrieval=true&amp;serverTimezone=UTC&amp;useSSL=false</span></span><br><span class="line">    <span class="attr">username:</span> <span class="string">root</span></span><br><span class="line">    <span class="attr">password:</span> <span class="number">123456</span></span><br><span class="line">    <span class="attr">connectionTimeoutMilliseconds:</span> <span class="number">30000</span></span><br><span class="line">    <span class="attr">idleTimeoutMilliseconds:</span> <span class="number">60000</span></span><br><span class="line">    <span class="attr">maxLifetimeMilliseconds:</span> <span class="number">1800000</span></span><br><span class="line">    <span class="attr">maxPoolSize:</span> <span class="number">50</span></span><br><span class="line">    <span class="attr">minPoolSize:</span> <span class="number">1</span></span><br><span class="line">  <span class="attr">replica_ds_0:</span></span><br><span class="line">    <span class="attr">url:</span> <span class="string">jdbc:mysql://127.0.0.1:17718/nacos_config?allowPublicKeyRetrieval=true&amp;serverTimezone=UTC&amp;useSSL=false</span></span><br><span class="line">    <span class="attr">username:</span> <span class="string">root</span></span><br><span class="line">    <span class="attr">password:</span> <span class="number">123456</span></span><br><span class="line">    <span class="attr">connectionTimeoutMilliseconds:</span> <span class="number">30000</span></span><br><span class="line">    <span class="attr">idleTimeoutMilliseconds:</span> <span class="number">60000</span></span><br><span class="line">    <span class="attr">maxLifetimeMilliseconds:</span> <span class="number">1800000</span></span><br><span class="line">    <span class="attr">maxPoolSize:</span> <span class="number">50</span></span><br><span class="line">    <span class="attr">minPoolSize:</span> <span class="number">1</span></span><br><span class="line">  <span class="attr">replica_ds_1:</span></span><br><span class="line">    <span class="attr">url:</span> <span class="string">jdbc:mysql://127.0.0.1:17719/nacos_config?allowPublicKeyRetrieval=true&amp;serverTimezone=UTC&amp;useSSL=false</span></span><br><span class="line">    <span class="attr">username:</span> <span class="string">root</span></span><br><span class="line">    <span class="attr">password:</span> <span class="number">123456</span></span><br><span class="line">    <span class="attr">connectionTimeoutMilliseconds:</span> <span class="number">30000</span></span><br><span class="line">    <span class="attr">idleTimeoutMilliseconds:</span> <span class="number">60000</span></span><br><span class="line">    <span class="attr">maxLifetimeMilliseconds:</span> <span class="number">1800000</span></span><br><span class="line">    <span class="attr">maxPoolSize:</span> <span class="number">50</span></span><br><span class="line">    <span class="attr">minPoolSize:</span> <span class="number">1</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="attr">rules:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="type">!READWRITE_SPLITTING</span></span><br><span class="line">    <span class="attr">dataSources:</span></span><br><span class="line">      <span class="attr">readwrite_ds:</span></span><br><span class="line">        <span class="attr">staticStrategy:</span></span><br><span class="line">          <span class="attr">writeDataSourceName:</span> <span class="string">primary_ds</span></span><br><span class="line">          <span class="attr">readDataSourceNames:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="string">replica_ds_0</span></span><br><span class="line">            <span class="bullet">-</span> <span class="string">replica_ds_1</span></span><br></pre></td></tr></table></figure></li>
+<li><code>/docker/sharding-proxy/ext-lib</code><br>将<code>mysql jbdc</code>驱动放进去。</li>
+</ol>
+<h1 id="三、运行容器"><a href="#三、运行容器" class="headerlink" title="三、运行容器"></a>三、运行容器</h1><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">docker run -d \</span><br><span class="line">    -v /docker/sharding-proxy/conf:/opt/shardingsphere-proxy/conf \</span><br><span class="line">    -v /docker/sharding-proxy/ext-lib:/opt/shardingsphere-proxy/ext-lib \</span><br><span class="line">    -p 3306:3307 \</span><br><span class="line">    apache/shardingsphere-proxy:latest</span><br></pre></td></tr></table></figure>
+<h1 id="五、总结"><a href="#五、总结" class="headerlink" title="五、总结"></a>五、总结</h1><p>看文档，看文档，看文档真的很重要。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/09/12/%E4%B8%BA%E4%BB%80%E4%B9%88ArrayList%20ForEach%E4%B8%8D%E8%83%BD%E4%BF%AE%E6%94%B9%E7%BB%93%E6%9E%84%EF%BC%9F/" rel="prev" title="为什么ArrayList ForEach不能修改结构？">
+      <i class="fa fa-chevron-left"></i> 为什么ArrayList ForEach不能修改结构？
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/12/18/%E6%A1%86%E6%9E%B6%E6%90%AD%E5%BB%BA/Docker%E6%90%AD%E5%BB%BAMysql%E4%B8%BB%E4%BB%8E%E6%90%AD%E5%BB%BA/" rel="next" title="Docker搭建Mysql主从搭建">
+      Docker搭建Mysql主从搭建 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E3%80%81-%E9%95%9C%E5%83%8F%E6%8B%89%E5%8F%96"><span class="nav-text">一、 镜像拉取</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%87%86%E5%A4%87%E9%85%8D%E7%BD%AE"><span class="nav-text">二、准备配置</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E5%AE%B9%E5%99%A8"><span class="nav-text">三、运行容器</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E6%80%BB%E7%BB%93"><span class="nav-text">五、总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">JiHongYuan</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">JiHongYuan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -28,7 +28,7 @@
 <meta property="og:description" content="前言环境选择: centos7、docker:20.10.21、mysql:8.0.31。一般来说数据库的瓶颈基本都是IO, 基本不会出现一台服务器部署多个Mysql服务，本次只作为Demo测试及简单使用，切勿在生产环境部署。   一、 镜像拉取在Docker Hub中选择合适的Mysql版本（8.0.31）。 1docker pull mysql:8.0.31  二、 准备配置1. 手动创建相关">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2022-12-18T13:28:00.000Z">
-<meta property="article:modified_time" content="2022-12-18T15:13:30.377Z">
+<meta property="article:modified_time" content="2022-12-19T01:12:53.078Z">
 <meta property="article:author" content="JiHongYuan">
 <meta name="twitter:card" content="summary">
 
@@ -125,7 +125,7 @@
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">6</span></a>
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">7</span></a>
 
   </li>
         <li class="menu-item menu-item-about">
@@ -183,10 +183,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2022-12-18 21:28:00 / 修改时间：23:13:30" itemprop="dateCreated datePublished" datetime="2022-12-18T21:28:00+08:00">2022-12-18</time>
+              <time title="创建时间：2022-12-18 21:28:00" itemprop="dateCreated datePublished" datetime="2022-12-18T21:28:00+08:00">2022-12-18</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-12-19 09:12:53" itemprop="dateModified" datetime="2022-12-19T09:12:53+08:00">2022-12-19</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -225,15 +231,13 @@
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">slave1</span></span><br><span class="line">[mysqld]</span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 设置server_id,注意要唯一</span></span></span><br><span class="line">server-id=2  </span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 开启二进制日志功能，以备Slave作为其它Slave的Master时使用</span></span></span><br><span class="line">log-bin=mysql-slave-bin   </span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># relay_log配置中继日志</span></span></span><br><span class="line">relay_log=edu-mysql-relay-bin  </span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">slave2</span></span><br><span class="line">[mysqld]</span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 设置server_id,注意要唯一</span></span></span><br><span class="line">server-id=3  </span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 开启二进制日志功能，以备Slave作为其它Slave的Master时使用</span></span></span><br><span class="line">log-bin=mysql-slave-bin   </span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># relay_log配置中继日志</span></span></span><br><span class="line">relay_log=edu-mysql-relay-bin  </span><br></pre></td></tr></table></figure>
 
 <h3 id="2-创建Mysql容器cp"><a href="#2-创建Mysql容器cp" class="headerlink" title="2. 创建Mysql容器cp"></a>2. 创建Mysql容器cp</h3><p>略, 大部分和<strong>1</strong>相同，只是从容器中复制出<code>conf.d</code>文件夹，根据<code>mysql</code>版本可能存在目录位置不一样。</p>
-<h2 id="三、创建容器"><a href="#三、创建容器" class="headerlink" title="三、创建容器"></a>三、创建容器</h2><p><strong>1. master</strong></p>
+<h2 id="三、创建容器"><a href="#三、创建容器" class="headerlink" title="三、创建容器"></a>三、创建容器</h2><p><strong>1. master</strong>  </p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">docker run -d --name mysql-master \</span><br><span class="line">    --privileged=true \</span><br><span class="line">    -p 17717:3306 \</span><br><span class="line">    -v /docker/mysql/master/data:/var/lib/mysql \</span><br><span class="line">    -v /docker/mysql/master/logs:/var/log/mysql \</span><br><span class="line">    -v /docker/mysql/master/conf:/etc/mysql \</span><br><span class="line">    -e MYSQL_ROOT_PASSWORD=123456 \</span><br><span class="line">    -d mysql:8.0.31</span><br></pre></td></tr></table></figure>
-<p><strong>2. slave1</strong></p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">docker run -d --name mysql-slave1 \</span><br><span class="line">   --privileged=true \</span><br><span class="line">   -p 17718:3306 \</span><br><span class="line">   -v /docker/mysql/slave1/data:/var/lib/mysql \</span><br><span class="line">   -v /docker/mysql/slave1/logs:/var/log/mysql \</span><br><span class="line">   -v /docker/mysql/slave1/conf:/etc/mysql \</span><br><span class="line">   -e MYSQL_ROOT_PASSWORD=21d4d869012c4e51acfd7a40387f5c99 \</span><br><span class="line">   -d mysql:8.0.31</span><br></pre></td></tr></table></figure>
+<p><strong>2. slave1</strong>  </p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">docker run -d --name mysql-slave1 \</span><br><span class="line">   --privileged=true \</span><br><span class="line">   -p 17718:3306 \</span><br><span class="line">   -v /docker/mysql/slave1/data:/var/lib/mysql \</span><br><span class="line">   -v /docker/mysql/slave1/logs:/var/log/mysql \</span><br><span class="line">   -v /docker/mysql/slave1/conf:/etc/mysql \</span><br><span class="line">   -e MYSQL_ROOT_PASSWORD=123456 \</span><br><span class="line">   -d mysql:8.0.31</span><br></pre></td></tr></table></figure>
 
-<p><strong>3. slave2</strong></p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">docker run -d --name mysql-slave2 \</span><br><span class="line">    --privileged=true \</span><br><span class="line">    -p 17719:3306 \</span><br><span class="line">    -v /docker/mysql/slave2/data:/var/lib/mysql \</span><br><span class="line">    -v /docker/mysql/slave2/logs:/var/log/mysql \</span><br><span class="line">    -v /docker/mysql/slave2/conf:/etc/mysql \</span><br><span class="line">    -e MYSQL_ROOT_PASSWORD=9393f589049f4c89939ba167f8a05043 \</span><br><span class="line">    -d mysql:8.0.31</span><br></pre></td></tr></table></figure>
-
-<h1 id="四、绑定主从关系"><a href="#四、绑定主从关系" class="headerlink" title="四、绑定主从关系"></a>四、绑定主从关系</h1><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">change master to master_host=&#x27;IP&#x27;,master_user=&#x27;root&#x27;,master_password=&#x27;&#x27;,master_port=17717,master_log_file=&#x27;replicas-mysql-bin.000001&#x27;,master_log_pos=0;</span><br><span class="line">flush privileges;</span><br><span class="line">start slave;</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">设置只读</span></span><br><span class="line">set global read_only=1;</span><br></pre></td></tr></table></figure>
+<p><strong>3. slave2</strong>  </p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">docker run -d --name mysql-slave2 \</span><br><span class="line">    --privileged=true \</span><br><span class="line">    -p 17719:3306 \</span><br><span class="line">    -v /docker/mysql/slave2/data:/var/lib/mysql \</span><br><span class="line">    -v /docker/mysql/slave2/logs:/var/log/mysql \</span><br><span class="line">    -v /docker/mysql/slave2/conf:/etc/mysql \</span><br><span class="line">    -e MYSQL_ROOT_PASSWORD=123456 \</span><br><span class="line">    -d mysql:8.0.31</span><br><span class="line">```  </span><br><span class="line">   </span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">四、绑定主从关系</span></span><br><span class="line">```shell</span><br><span class="line">change master to master_host=&#x27;IP&#x27;,master_user=&#x27;root&#x27;,master_password=&#x27;&#x27;,master_port=17717,master_log_file=&#x27;replicas-mysql-bin.000001&#x27;,master_log_pos=0;</span><br><span class="line">flush privileges;</span><br><span class="line">start slave;</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">设置只读</span></span><br><span class="line">set global read_only=1;</span><br></pre></td></tr></table></figure>
 
 <h1 id="五、总结"><a href="#五、总结" class="headerlink" title="五、总结"></a>五、总结</h1><p>总体下来搭建并不复杂，只需要几行配置命令即可，实际上还是花了大半天的时间。<br>总结下来：文档没有仔细阅读、docker并不熟悉导致的结果。</p>
 
@@ -251,8 +255,8 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2021/09/12/%E4%B8%BA%E4%BB%80%E4%B9%88ArrayList%20ForEach%E4%B8%8D%E8%83%BD%E4%BF%AE%E6%94%B9%E7%BB%93%E6%9E%84%EF%BC%9F/" rel="prev" title="为什么ArrayList ForEach不能修改结构？">
-      <i class="fa fa-chevron-left"></i> 为什么ArrayList ForEach不能修改结构？
+    <a href="/2022/12/18/%E6%A1%86%E6%9E%B6%E6%90%AD%E5%BB%BA/Docker%E6%90%AD%E5%BB%BASharding-Proxy%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB/" rel="prev" title="Docker搭建Sharding-Proxy读写分离">
+      <i class="fa fa-chevron-left"></i> Docker搭建Sharding-Proxy读写分离
     </a></div>
       <div class="post-nav-item"></div>
     </div>
@@ -313,7 +317,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E3%80%81-%E9%95%9C%E5%83%8F%E6%8B%89%E5%8F%96"><span class="nav-text">一、 镜像拉取</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8C%E3%80%81-%E5%87%86%E5%A4%87%E9%85%8D%E7%BD%AE"><span class="nav-text">二、 准备配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E6%89%8B%E5%8A%A8%E5%88%9B%E5%BB%BA%E7%9B%B8%E5%85%B3%E9%85%8D%E7%BD%AE"><span class="nav-text">1. 手动创建相关配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E5%88%9B%E5%BB%BAMysql%E5%AE%B9%E5%99%A8cp"><span class="nav-text">2. 创建Mysql容器cp</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E5%88%9B%E5%BB%BA%E5%AE%B9%E5%99%A8"><span class="nav-text">三、创建容器</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E7%BB%91%E5%AE%9A%E4%B8%BB%E4%BB%8E%E5%85%B3%E7%B3%BB"><span class="nav-text">四、绑定主从关系</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E6%80%BB%E7%BB%93"><span class="nav-text">五、总结</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E3%80%81-%E9%95%9C%E5%83%8F%E6%8B%89%E5%8F%96"><span class="nav-text">一、 镜像拉取</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8C%E3%80%81-%E5%87%86%E5%A4%87%E9%85%8D%E7%BD%AE"><span class="nav-text">二、 准备配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E6%89%8B%E5%8A%A8%E5%88%9B%E5%BB%BA%E7%9B%B8%E5%85%B3%E9%85%8D%E7%BD%AE"><span class="nav-text">1. 手动创建相关配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E5%88%9B%E5%BB%BAMysql%E5%AE%B9%E5%99%A8cp"><span class="nav-text">2. 创建Mysql容器cp</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E5%88%9B%E5%BB%BA%E5%AE%B9%E5%99%A8"><span class="nav-text">三、创建容器</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E6%80%BB%E7%BB%93"><span class="nav-text">五、总结</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -327,7 +331,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">6</span>
+          <span class="site-state-item-count">7</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
